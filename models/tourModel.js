@@ -1,22 +1,32 @@
-// const fs = require("fs");
-// const path = require("path");
-// const dir = path.join(__dirname, "../data/tours-simple.json");
 
-// const tours = JSON.parse(fs.readFileSync(dir));
-
-
-// module.exports = tours;
-
-// const { getAllTours } = require("../controllers/tourController");
 const { sql } = require("../dbConnection");
 
 exports.getAllTours = async () => {
     const tourList = await sql`
-    SELECT tours.*
+    SELECT tours.name, 
+    categories.name,
+    difficulty,
+    tours.price
     FROM tours
+    JOIN difficulty ON tours.difficulty_id=difficulty.id
+    JOIN categories ON tours.category_id = categories.id
     `;
-
     return tourList;
+};
+
+exports.getToursByCat =async (categotyId) => {
+    const tourList = await sql`
+    SELECT tours.name, 
+    categories.name,
+    difficulty.level,
+    tours.price
+    FROM tours
+    JOIN difficulty ON tours.difficulty_id=difficulty.id
+    JOIN categories ON tours.category_id = categories.id
+    WHERE tours.category_id=${categotyId}
+    `;
+    return tours;
+
 }
 
 exports.getTourById = async (id) => {
@@ -30,6 +40,16 @@ exports.getTourById = async (id) => {
 }
 
 
+exports.countToursByCat = async () => {
+    const tours = await sql`
+    SELECT 
+    categories.name AS category,
+    COUNT(tours.id) AS totalCounts,
+    FROM tours
+    JOIN categories ON tours.category_id=categories.id
+    GROUP BY categories.name
+    `;
+  };
 
 exports.postTour = async (tour) => {
     const columns = [
@@ -57,4 +77,20 @@ const columns = Object.keys(tour);
      RETURNING *
     `;
   return newTours[0];
+}
+
+
+// FILTER
+exports.filterTours = async () => {
+    const tours = await sql`
+    SELECT tours.*, difficulty.name as difficulty, categories.title as category
+    FROM tours
+    JOIN difficulty ON tours.difficulty = difficulty.id
+    JOIN categories ON tours.category = categories.id
+    WHERE
+    tours.duration <= ${filter.duration} 
+    AND difficulty.name = ${filter.difficulty} 
+    AND tours.price <= ${filter.price}  
+   `;
+    return tours;
 }
